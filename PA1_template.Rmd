@@ -5,35 +5,35 @@ output: html_document
 ---
 ---
 
->The following chunk of code will read the data in.
+>The following will read the data in.
 
 
-```{r}
+```{r, echo = TRUE}
 data <- read.csv("C:/Users/Mitch/Documents/DataScience/repdata-data-activity/activity.csv")
 ```
 
 
->The next piece of code will take all the NA's out of the data and calculate the daily step totals.
+>This section will take all the missing values out of the data and calculate the daily step totals.
 
 
-```{r}
+```{r, echo = TRUE}
 newdata <- data[!is.na(data$steps),]
 dailyagg <- setNames(aggregate(newdata$steps,by=list(newdata$date),FUN=sum),c("date","steps"))
 dailyagg
 ```
 
 
->This piece of code produces a histogram of the total steps per day.        
+>This section produces a histogram of the total steps per day.        
 
 
-```{r}
+```{r, echo = TRUE}
 hist(dailyagg$steps, main = "Histogram of Total Steps", xlab = "Steps", col = "red")
 ```
 
 
 >This section will calculate the mean and median of the steps per day.
 
-```{r}
+```{r, echo = TRUE}
 meanDailySteps <- mean(dailyagg$steps)
 medianDailySteps <- median(dailyagg$steps)
 sprintf("Mean daily steps: %g", meanDailySteps)
@@ -41,19 +41,19 @@ sprintf("Median daily steps: %i", medianDailySteps)
 ```
 
 
->This code will create a plot showing the average daily activity pattern.
+>The following will create a plot showing the average daily activity pattern.
 
 
-```{r}
+```{r, echo = TRUE}
 dailyMean <- setNames(aggregate(newdata$steps,by=list(newdata$interval),FUN=mean),c("interval","steps"))
 plot(dailyMean$interval, dailyMean$steps, type = "l", xlab = "5-minute Interval", ylab = "Average Step Count")
 ```
 
 
->This code will find which interval has the max number of steps in it.
+>This section will find which interval has the max number of steps in it.
 
 
-```{r}
+```{r, echo = TRUE}
 maxinterval <- as.character(dailyMean$interval[which.max(dailyMean$steps)])
 sprintf("Time interval with maximum steps: %s",maxinterval)
 ```
@@ -62,15 +62,16 @@ sprintf("Time interval with maximum steps: %s",maxinterval)
 >This section will calculate the amount of missing values in the dataset.
 
 
-```{r}
+```{r, echo = TRUE}
 sprintf("Total number of missing values: %i", sum(is.na(data$steps)))
 ```
 
 
->Devise a strategy for filling in all of the missing values in the dataset. Create a new dataset that is equal to the original dataset but with the missing data filled in. I am going to solve this problem by replacing the missing values with the rounded value of the mean from the same time interval with values.
+>Devise a strategy for filling in all of the missing values in the dataset. Create a new dataset that is equal to the original dataset but with the missing data filled in. 
+>I am going to solve this problem by replacing the missing values with the rounded value of the mean from the same time interval in which the missing value is located.
 
 
-```{r}
+```{r, echo = TRUE}
 missing <- which(is.na(data$steps))
 inputedsteps <- data
 intervalagg <- setNames(aggregate(newdata$steps,by=list(newdata$interval),FUN=sum, na.rm=TRUE),c("interval","steps"))
@@ -85,7 +86,7 @@ for (i in missing) {
 >Now I will create a histogram of the new results.
 
 
-```{r}
+```{r, echo = TRUE}
 inputeddailyagg <- setNames(aggregate(inputedsteps$steps,by=list(inputedsteps$date),FUN=sum),c("date","steps"))
 hist(inputeddailyagg$steps,main="Histogram of Total Steps Per Day",xlab="Steps",col="red")
 ```
@@ -94,7 +95,7 @@ hist(inputeddailyagg$steps,main="Histogram of Total Steps Per Day",xlab="Steps",
 >This part will get the mean and median of the total steps taken per day.
 
 
-```{r}
+```{r, echo = TRUE}
 inputdailystepsmean <- mean(inputeddailyagg$steps,na.rm=TRUE)
 inputdailystepsmedian <- median(inputeddailyagg$steps,na.rm=TRUE)
 sprintf("Mean daily imputed steps: %g", inputdailystepsmean)
@@ -105,17 +106,17 @@ sprintf("Median daily imputed steps: %i", inputdailystepsmedian)
 >In this section we are going to create a new column with days that are the weekend.
 
 
-```{r}
+```{r, echo = TRUE}
 inputedsteps$dayclass<-ifelse(weekdays(strptime(levels(inputedsteps$date), format="%Y-%m-%d")) %in% c("Saturday","Sunday"), "weekend", "weekday")
 inputedsteps$dayclass <- as.factor(inputedsteps$dayclass)
 inputedweekend <- setNames(aggregate(inputedsteps$steps, by=list(inputedsteps$dayclass,inputedsteps$interval), FUN=mean),c("dayclass","Interval","Steps"))
 ```
 
 
->This last weekend will show a graph of the results with the difference between weekends and weekdays.
+>This final section will show a graph of the difference in step count between weekends and weekdays.
 
 
-```{r}
+```{r, echo = TRUE}
 library(lattice)
 xyplot(Steps ~ Interval | dayclass, data=inputedweekend, type="l", layout=c(1,2), ylab = "Mean Step Count", main="Mean Steps Per 5-Minute Interval, Weekend vs Weekday")
 ```
