@@ -1,25 +1,121 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+output: html_document
+---
+---
 ---
 
-
-## Loading and preprocessing the data
-
+>The following chunk of code will read the data in.
 
 
-## What is mean total number of steps taken per day?
+```{r}
+data <- read.csv("C:/Users/Mitch/Documents/DataScience/repdata-data-activity/activity.csv")
+```
 
 
-
-## What is the average daily activity pattern?
-
+>The next piece of code will take all the NA's out of the data and calculate the daily step totals.
 
 
-## Imputing missing values
+```{r}
+newdata <- data[!is.na(data$steps),]
+dailyagg <- setNames(aggregate(newdata$steps,by=list(newdata$date),FUN=sum),c("date","steps"))
+dailyagg
+```
 
 
+>This piece of code produces a histogram of the total steps per day.        
 
-## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+hist(dailyagg$steps, main = "Histogram of Total Steps", xlab = "Steps", col = "red")
+```
+
+
+>This section will calculate the mean and median of the steps per day.
+
+```{r}
+meanDailySteps <- mean(dailyagg$steps)
+medianDailySteps <- median(dailyagg$steps)
+sprintf("Mean daily steps: %g", meanDailySteps)
+sprintf("Median daily steps: %i", medianDailySteps)
+```
+
+
+>This code will create a plot showing the average daily activity pattern.
+
+
+```{r}
+dailyMean <- setNames(aggregate(newdata$steps,by=list(newdata$interval),FUN=mean),c("interval","steps"))
+plot(dailyMean$interval, dailyMean$steps, type = "l", xlab = "5-minute Interval", ylab = "Average Step Count")
+```
+
+
+>This code will find which interval has the max number of steps in it.
+
+
+```{r}
+maxinterval <- as.character(dailyMean$interval[which.max(dailyMean$steps)])
+sprintf("Time interval with maximum steps: %s",maxinterval)
+```
+
+
+>This section will calculate the amount of missing values in the dataset.
+
+
+```{r}
+sprintf("Total number of missing values: %i", sum(is.na(data$steps)))
+```
+
+
+>Devise a strategy for filling in all of the missing values in the dataset. Create a new dataset that is equal to the original dataset but with the missing data filled in. I am going to solve this problem by replacing the missing values with the rounded value of the mean from the same time interval with values.
+
+
+```{r}
+missing <- which(is.na(data$steps))
+inputedsteps <- data
+intervalagg <- setNames(aggregate(newdata$steps,by=list(newdata$interval),FUN=sum, na.rm=TRUE),c("interval","steps"))
+intervalagg <- aggregate(steps ~ interval, newdata, mean)
+for (i in missing) {
+    inputedsteps$steps[i] <- 
+      with(intervalagg, round(steps[interval == inputedsteps$interval[i]]),0)
+}
+```
+
+
+>Now I will create a histogram of the new results.
+
+
+```{r}
+inputeddailyagg <- setNames(aggregate(inputedsteps$steps,by=list(inputedsteps$date),FUN=sum),c("date","steps"))
+hist(inputeddailyagg$steps,main="Histogram of Total Steps Per Day",xlab="Steps",col="red")
+```
+
+
+>This part will get the mean and median of the total steps taken per day.
+
+
+```{r}
+inputdailystepsmean <- mean(inputeddailyagg$steps,na.rm=TRUE)
+inputdailystepsmedian <- median(inputeddailyagg$steps,na.rm=TRUE)
+sprintf("Mean daily imputed steps: %g", inputdailystepsmean)
+sprintf("Median daily imputed steps: %i", inputdailystepsmedian)
+```
+
+
+>In this section we are going to create a new column with days that are the weekend.
+
+
+```{r}
+inputedsteps$dayclass<-ifelse(weekdays(strptime(levels(inputedsteps$date), format="%Y-%m-%d")) %in% c("Saturday","Sunday"), "weekend", "weekday")
+inputedsteps$dayclass <- as.factor(inputedsteps$dayclass)
+inputedweekend <- setNames(aggregate(inputedsteps$steps, by=list(inputedsteps$dayclass,inputedsteps$interval), FUN=mean),c("dayclass","Interval","Steps"))
+```
+
+
+>This last weekend will show a graph of the results with the difference between weekends and weekdays.
+
+
+```{r}
+library(lattice)
+xyplot(Steps ~ Interval | dayclass, data=inputedweekend, type="l", layout=c(1,2), ylab = "Mean Step Count", main="Mean Steps Per 5-Minute Interval, Weekend vs Weekday")
+```
